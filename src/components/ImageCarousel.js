@@ -1,15 +1,32 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Carousel } from 'react-responsive-carousel';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
+import firebase from 'firebase/compat/app';
+import { getStorage } from 'firebase/compat/storage';
+import firebaseConfig from './firebaseConfig.js';
+
+// Initialize Firebase
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
 const ImageCarousel = () => {
-  const images = [
-		"https://images.unsplash.com/photo-1498092651296-641e88c3b057?auto=format&fit=crop&w=1778&q=60&ixid=dW5zcGxhc2guY29tOzs7Ozs%3D",
-		"https://brightcove04pmdo-a.akamaihd.net/5104226627001/5104226627001_5297440765001_5280261645001-vs.jpg?pubId=5104226627001&videoId=5280261645001",
-		"https://images.fineartamerica.com/images/artworkimages/mediumlarge/1/empire-state-building-black-and-white-square-format-john-farnan.jpg",
-		// Add more image URLs as needed
-  ];
+  const [imageUrls, setImageUrls] = useState([]);
+
+  useEffect(() => {
+    const storageRef = firebase.storage().ref();
+    const imagesRef = storageRef.child('carousel'); // Assuming your images are stored in a "carousel" folder
+
+    imagesRef.listAll().then((result) => {
+      const urls = result.items.map((item) => {
+        return item.getDownloadURL();
+      });
+      Promise.all(urls).then((downloadUrls) => {
+        setImageUrls(downloadUrls);
+      });
+    });
+  }, []);
+
   return (
     <div className="carousel-container">
       <div className="carousel-wrapper">
@@ -20,9 +37,13 @@ const ImageCarousel = () => {
           showStatus={false}
           infiniteLoop
         >
-          {images.map((image, index) => (
+          {imageUrls.map((imageUrl, index) => (
             <div key={index} className="carousel-slide">
-              <img src={image} alt={`Slide ${index}`} className="carousel-image" />
+              <img
+                src={imageUrl}
+                alt={`Slide ${index}`}
+                className="carousel-image"
+              />
             </div>
           ))}
         </Carousel>
